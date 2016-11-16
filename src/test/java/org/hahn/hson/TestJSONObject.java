@@ -10,7 +10,7 @@ public class TestJSONObject {
     @Test
     public void testJSON1() {
         String line = "{\"key1\":\"value1\"}";
-        JSONObject obj = JSONObject.parse(line);
+        JSONObject obj = new JSONObject(line);
         System.out.println(obj.toPrettyString());
     }
 
