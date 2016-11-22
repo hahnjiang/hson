@@ -14,7 +14,7 @@ public class TestJSONSkipListMap {
     public void test1() {
         Map<String, Double> map = createMap(100);
         JSONSkipListMap json = new JSONSkipListMap(map);
-        json.prettyPrint();
+        json.prettyPrint(0);
     }
 
     private Map<String, Double> createMap(int size) {

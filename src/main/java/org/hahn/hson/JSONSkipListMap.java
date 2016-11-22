@@ -12,7 +12,7 @@ public class JSONSkipListMap {
 
     private static final int KEY_NEXT = 0;
     private static final int VALUE_NEXT = 1;
-    private Cell head = null;
+    private Cell[] head = null;
     private int level;
     private int length;
 
@@ -22,45 +22,25 @@ public class JSONSkipListMap {
         return l;
     }
 
-    private Cell init(Map<String, Double> map) {
-        List<Pair<String, Double>> data = new ArrayList<>();
+    private void init(Map<String, Double> map) {
+        List<Cell> data = new ArrayList<>();
         for (Map.Entry<String, Double> entry : map.entrySet()) {
-            data.add(new Pair<>(entry.getKey(), entry.getValue()));
+            data.add(new Cell(level, entry.getKey(), entry.getValue()));
         }
-        Collections.sort(data, new Comparator<Pair<String, Double>>() {
-            @Override
-            public int compare(Pair<String, Double> o1, Pair<String, Double> o2) {
-                double s1 = o1.getValue();
-                double s2 = o2.getValue();
-                return (s1 == s2) ? 0 : ((s1 < s2) ? (-1) : (1));
-            }
-        });
-        head = new Cell(level, data.get(0).getKey(), data.get(0).getValue());
-        Cell[] pre = new Cell[head.next.length];
-        int[] cnt = new int[pre.length];
-        Arrays.fill(pre, head);
-        Arrays.fill(cnt, 0);
-        for (int i = 1; i < data.size(); ++i) {
-            Cell c = new Cell(level, data.get(i).getKey(), data.get(i).getValue());
-            for (int j = 0; j < level; ++j) {
-                ++cnt[j];
-                if (cnt[j] % (1 << j) == 0) {
-                    pre[j].setNext(j, c);
-                    pre[j] = c;
-                    cnt[j] = 0;
-                }
-            }
-        }
-        return head;
+        Collections.sort(data, new Cell.ValueComparator());
+        init(data, VALUE_NEXT);
+        Collections.sort(data, new Cell.KeyComparator());
+        init(data, KEY_NEXT);
     }
 
-    private Cell init(List<Pair<String, Double>> data, int t) {
-        Cell[] pre = new Cell[head.next.length];
+    private void init(List<Cell> data, int t) {
+        Cell head = data.get(0);
+        Cell[] pre = new Cell[head.next[t].length];
         int[] cnt = new int[pre.length];
         Arrays.fill(pre, head);
         Arrays.fill(cnt, 0);
         for (int i = 1; i < data.size(); ++i) {
-            Cell c = new Cell(level, data.get(i).getKey(), data.get(i).getValue());
+            Cell c = data.get(i);
             for (int j = 0; j < level; ++j) {
                 ++cnt[j];
                 if (cnt[j] % (1 << j) == 0) {
@@ -70,6 +50,7 @@ public class JSONSkipListMap {
                 }
             }
         }
+        this.head[t] = head;
     }
 
     public JSONSkipListMap(Map<String, Double> map) {
@@ -78,25 +59,32 @@ public class JSONSkipListMap {
         }
         length = map.size();
         level = calcLevel(length / 4) + 1;
-        head = init(map);
+        head = new Cell[2];
+        init(map);
     }
 
     public void add(String key, double value) {
-        Cell p = find(key, head);
+        Cell p = find(key, head[KEY_NEXT]);
         if (p.key.equals(key)) {
             return;
         } else {
             Cell np = new Cell(1, key, value);
-            np.setNext(0, p.next[0]);
-            p.next[0] = np;
         }
     }
 
     public void prettyPrint() {
-        Cell point = head;
+        Cell point = head[VALUE_NEXT];
         for (int i = 0; i < length(); i++) {
             System.out.println(point);
-            point = point.next[0];
+            point = point.next[VALUE_NEXT][0];
+        }
+    }
+
+    public void prettyPrint(int t) {
+        Cell point = head[t];
+        for (int i = 0; i < length(); i++) {
+            System.out.println(point);
+            point = point.next[t][0];
         }
     }
 
@@ -105,16 +93,11 @@ public class JSONSkipListMap {
     }
 
     public double opt(String key, double defaultValue) {
-        Cell p = find(key, head);
+        Cell p = find(key, head[KEY_NEXT]);
         if (p == null || !p.key.equals(key)) {
             return defaultValue;
         }
         return p.val;
-    }
-
-
-    private Cell findByValue(double val, Cell point) {
-
     }
 
     private Cell find(String key, Cell point) {
@@ -126,7 +109,7 @@ public class JSONSkipListMap {
         } else {
             int idx = -1;
             for (int i = 0; i < point.next.length; ++i) {
-                if (point.next[i].key.compareTo(key) <= 0) {
+                if (point.next[KEY_NEXT][i].key.compareTo(key) <= 0) {
                     idx = i;
                 } else {
                     break;
@@ -135,7 +118,7 @@ public class JSONSkipListMap {
             if (idx == -1) {
                 return point;
             } else {
-                return find(key, point.next[idx]);
+                return find(key, point.next[KEY_NEXT][idx]);
             }
         }
     }
@@ -145,40 +128,20 @@ public class JSONSkipListMap {
         private String key;
         private double val;
 
-        /**
-         * public Cell(String key, double val) {
-         * this.key = key;
-         * this.val = val;
-         * }
-         */
-
         public Cell(int level, String key, double val) {
             this.next = new Cell[2][level];
             this.key = key;
             this.val = val;
         }
 
-        protected Cell getKeyNext(int idx) {
-            if (idx >= this.next.length) return null;
-            return this.next[KEY_NEXT][idx];
-        }
-
-        protected Cell getValueNext(int idx) {
-            if (idx >= this.next.length) return null;
-            return this.next[VALUE_NEXT][idx];
-        }
-
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("[key=");
-            sb.append(key);
-            sb.append(",value=");
-            sb.append(val);
+            sb.append("[key=").append(key);
+            sb.append(",value=").append(val);
             sb.append(",knext=");
             for (Cell c : next[KEY_NEXT]) {
                 if (c != null) {
-                    sb.append(c.key);
-                    sb.append(",");
+                    sb.append(c.key).append(",");
                 } else {
                     sb.append("null,");
                 }
@@ -186,8 +149,7 @@ public class JSONSkipListMap {
             sb.append("vnext=");
             for (Cell c : next[VALUE_NEXT]) {
                 if (c != null) {
-                    sb.append(c.key);
-                    sb.append(",");
+                    sb.append(c.key).append(",");
                 } else {
                     sb.append("null,");
                 }
@@ -195,7 +157,24 @@ public class JSONSkipListMap {
             sb.append("]");
             return sb.toString();
         }
-    }
 
+        static class KeyComparator implements Comparator<Cell> {
+            @Override
+            public int compare(Cell o1, Cell o2) {
+                String s1 = o1.key;
+                String s2 = o2.key;
+                return s1.compareTo(s2);
+            }
+        }
+
+        static class ValueComparator implements Comparator<Cell> {
+            @Override
+            public int compare(Cell o1, Cell o2) {
+                double s1 = o1.val;
+                double s2 = o2.val;
+                return (s1 == s2) ? 0 : ((s1 < s2) ? (-1) : (1));
+            }
+        }
+    }
 
 }

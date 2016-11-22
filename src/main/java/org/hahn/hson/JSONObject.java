@@ -1,6 +1,11 @@
 package org.hahn.hson;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -9,6 +14,7 @@ import java.util.Map;
 public class JSONObject {
 
     private Map<String, Object> data;
+    private boolean onlyRead = true;
     public static final Object NULL = new Null();
 
     public JSONObject() {
@@ -39,7 +45,7 @@ public class JSONObject {
                     key = x.nextValue().toString();
             }
 
-// The key is followed by ':'.
+            // The key is followed by ':'.
 
             c = x.nextClean();
             if (c != ':') {
@@ -47,7 +53,7 @@ public class JSONObject {
             }
             this.putOnce(key, x.nextValue());
 
-// Pairs are separated by ','.
+            // Pairs are separated by ','.
 
             switch (x.nextClean()) {
                 case ';':
@@ -65,28 +71,261 @@ public class JSONObject {
         }
     }
 
-    public JSONObject putOnce(String key, Object value) throws JSONException {
+    /**
+     * get api
+     **/
+    public Object get(String key) throws JSONException {
+        if (key == null) {
+            throw new JSONException("Null key.");
+        } else {
+            Object object = this.opt(key);
+            if (object == null) {
+                throw new JSONException("JSONObject[" + quote(key) + "] not found.");
+            } else {
+                return object;
+            }
+        }
+    }
+
+    public boolean getBoolean(String key) throws JSONException {
+        Object object = this.get(key);
+        if (!object.equals(Boolean.FALSE) && (!(object instanceof String) || !((String) object).equalsIgnoreCase("false"))) {
+            if (!object.equals(Boolean.TRUE) && (!(object instanceof String) || !((String) object).equalsIgnoreCase("true"))) {
+                throw new JSONException("JSONObject[" + quote(key) + "] is not a Boolean.");
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public double getDouble(String key) throws JSONException {
+        Object object = this.get(key);
+
+        try {
+            return object instanceof Number ? ((Number) object).doubleValue() : Double.parseDouble((String) object);
+        } catch (Exception var4) {
+            throw new JSONException("JSONObject[" + quote(key) + "] is not a number.");
+        }
+    }
+
+    public int getInt(String key) throws JSONException {
+        Object object = this.get(key);
+
+        try {
+            return object instanceof Number ? ((Number) object).intValue() : Integer.parseInt((String) object);
+        } catch (Exception var4) {
+            throw new JSONException("JSONObject[" + quote(key) + "] is not an int.");
+        }
+    }
+
+    public JSONObject getJSONObject(String key) throws JSONException {
+        Object object = this.get(key);
+        if (object instanceof JSONObject) {
+            return (JSONObject) object;
+        } else {
+            throw new JSONException("JSONObject[" + quote(key) + "] is not a JSONObject.");
+        }
+    }
+
+    public long getLong(String key) throws JSONException {
+        Object object = this.get(key);
+
+        try {
+            return object instanceof Number ? ((Number) object).longValue() : Long.parseLong((String) object);
+        } catch (Exception var4) {
+            throw new JSONException("JSONObject[" + quote(key) + "] is not a long.");
+        }
+    }
+
+    public static String[] getNames(JSONObject jo) {
+        int length = jo.length();
+        if (length == 0) {
+            return null;
+        } else {
+            Iterator iterator = jo.keys();
+            String[] names = new String[length];
+
+            for (int i = 0; iterator.hasNext(); ++i) {
+                names[i] = (String) iterator.next();
+            }
+
+            return names;
+        }
+    }
+
+    public static String[] getNames(Object object) {
+        if (object == null) {
+            return null;
+        } else {
+            Class klass = object.getClass();
+            Field[] fields = klass.getFields();
+            int length = fields.length;
+            if (length == 0) {
+                return null;
+            } else {
+                String[] names = new String[length];
+
+                for (int i = 0; i < length; ++i) {
+                    names[i] = fields[i].getName();
+                }
+
+                return names;
+            }
+        }
+    }
+
+    public String getString(String key) throws JSONException {
+        Object object = this.get(key);
+        if (object instanceof String) {
+            return (String) object;
+        } else {
+            throw new JSONException("JSONObject[" + quote(key) + "] not a string.");
+        }
+    }
+
+    public boolean has(String var1) {
+        return this.data.containsKey(var1);
+    }
+
+    public boolean isNull(String var1) {
+        return NULL.equals(this.opt(var1));
+    }
+
+    public Iterator keys() {
+        return this.data.keySet().iterator();
+    }
+
+    public int length() {
+        return this.data.size();
+    }
+
+    /**
+     * opt api
+     **/
+    public Object opt(String key) {
+        return key == null ? null : this.data.get(key);
+    }
+
+    public boolean optBoolean(String var1) {
+        return this.optBoolean(var1, false);
+    }
+
+    public boolean optBoolean(String var1, boolean var2) {
+        try {
+            return this.getBoolean(var1);
+        } catch (Exception var4) {
+            return var2;
+        }
+    }
+
+    public double optDouble(String var1) {
+        return this.optDouble(var1, 0.0D / 0.0);
+    }
+
+    public double optDouble(String var1, double var2) {
+        try {
+            Object var4 = this.opt(var1);
+            return var4 instanceof Number ? ((Number) var4).doubleValue() : (new Double((String) var4)).doubleValue();
+        } catch (Exception var5) {
+            return var2;
+        }
+    }
+
+    public int optInt(String var1) {
+        return this.optInt(var1, 0);
+    }
+
+    public int optInt(String var1, int var2) {
+        try {
+            return this.getInt(var1);
+        } catch (Exception var4) {
+            return var2;
+        }
+    }
+
+    public JSONObject optJSONObject(String var1) {
+        Object var2 = this.opt(var1);
+        return var2 instanceof JSONObject ? (JSONObject) var2 : null;
+    }
+
+    public long optLong(String var1) {
+        return this.optLong(var1, 0L);
+    }
+
+    public long optLong(String var1, long var2) {
+        try {
+            return this.getLong(var1);
+        } catch (Exception var5) {
+            return var2;
+        }
+    }
+
+    public String optString(String var1) {
+        return this.optString(var1, "");
+    }
+
+    public String optString(String key, String defaultValue) {
+        Object var3 = this.opt(key);
+        return var3 != null ? var3.toString() : defaultValue;
+    }
+
+    /**
+     * put api
+     **/
+    public JSONObject put(String key, Object value) {
+        if (key == null) {
+            throw new NullPointerException("Null key.");
+        }
+        if (value != null) {
+            testValidity(value);
+            this.data.put(key, value);
+        } else {
+            this.remove(key);
+        }
+        return this;
+    }
+
+    public JSONObject put(String key, boolean value) {
+        this.data.put(key, value ? Boolean.TRUE : Boolean.FALSE);
+        return this;
+    }
+
+    public JSONObject put(String key, double value) {
+        this.data.put(key, value);
+        return this;
+    }
+
+    public JSONObject put(String key, int value) {
+        this.data.put(key, value);
+        return this;
+    }
+
+    public JSONObject put(String key, long value) {
+        this.data.put(key, value);
+        return this;
+    }
+
+    public JSONObject put(String key, Map<?, ?> value) {
+        this.data.put(key, value);
+        return this;
+    }
+
+    public JSONObject putOnce(String key, Object value) {
         if (key != null && value != null) {
             if (this.opt(key) != null) {
                 throw new JSONException("Duplicate key \"" + key + "\"");
             }
+
             this.put(key, value);
         }
         return this;
     }
 
-    public Object opt(String key) {
-        return key == null ? null : this.data.get(key);
-    }
-
-    public JSONObject put(String key, Object value) throws JSONException {
-        if (key == null) {
-            throw new NullPointerException("Null key.");
-        }
-        if (value != null) {
-            this.data.put(key, value);
-        } else {
-            this.remove(key);
+    public JSONObject putOpt(String key, Object value) throws JSONException {
+        if (key != null && value != null) {
+            this.put(key, value);
         }
         return this;
     }
@@ -104,6 +343,94 @@ public class JSONObject {
         return data.toString();
     }
 
+    public byte[] toBytes() {
+        return new byte[0];
+    }
+
+    public static String quote(String string) {
+        StringWriter sw = new StringWriter();
+        synchronized (sw.getBuffer()) {
+            String var10000;
+            try {
+                var10000 = quote(string, sw).toString();
+            } catch (IOException var5) {
+                return "";
+            }
+
+            return var10000;
+        }
+    }
+
+    public static Writer quote(String string, Writer w) throws IOException {
+        if (string != null && string.length() != 0) {
+            char c = 0;
+            int len = string.length();
+            w.write(34);
+
+            for (int i = 0; i < len; ++i) {
+                char b = c;
+                c = string.charAt(i);
+                switch (c) {
+                    case '\b':
+                        w.write("\\b");
+                        continue;
+                    case '\t':
+                        w.write("\\t");
+                        continue;
+                    case '\n':
+                        w.write("\\n");
+                        continue;
+                    case '\f':
+                        w.write("\\f");
+                        continue;
+                    case '\r':
+                        w.write("\\r");
+                        continue;
+                    case '\"':
+                    case '\\':
+                        w.write(92);
+                        w.write(c);
+                        continue;
+                    case '/':
+                        if (b == 60) {
+                            w.write(92);
+                        }
+
+                        w.write(c);
+                        continue;
+                }
+
+                if (c >= 32 && (c < 128 || c >= 160) && (c < 8192 || c >= 8448)) {
+                    w.write(c);
+                } else {
+                    w.write("\\u");
+                    String hhhh = Integer.toHexString(c);
+                    w.write("0000", 0, 4 - hhhh.length());
+                    w.write(hhhh);
+                }
+            }
+
+            w.write(34);
+            return w;
+        } else {
+            w.write("\"\"");
+            return w;
+        }
+    }
+
+    static void testValidity(Object var0) throws JSONException {
+        if (var0 != null) {
+            if (var0 instanceof Double) {
+                if (((Double) var0).isInfinite() || ((Double) var0).isNaN()) {
+                    throw new JSONException("JSON does not allow non-finite numbers.");
+                }
+            } else if (var0 instanceof Float && (((Float) var0).isInfinite() || ((Float) var0).isNaN())) {
+                throw new JSONException("JSON does not allow non-finite numbers.");
+            }
+        }
+
+    }
+
     public static Object stringToValue(String string) {
         if (string.equals("")) {
             return string;
@@ -118,7 +445,7 @@ public class JSONObject {
             return JSONObject.NULL;
         }
 
-        /*
+        /**
          * If it might be a number, try converting it. If a number cannot be
          * produced, then the value will just be a string.
          */

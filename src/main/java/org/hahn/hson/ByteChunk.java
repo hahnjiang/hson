@@ -5,7 +5,7 @@ package org.hahn.hson;
  */
 public class ByteChunk {
 
-    private static final int CHUNK_LENGTH = 5120;
+    private static final int CHUNK_LENGTH = 65536;
     private int chunkId;
     private byte[] chunk;
     private int wpos;
