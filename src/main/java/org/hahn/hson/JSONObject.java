@@ -71,10 +71,14 @@ public class JSONObject {
         }
     }
 
+    public JSONMeta getMeta(String key) {
+        // TODO
+        return null;
+    }
     /**
      * get api
      **/
-    public Object get(String key) throws JSONException {
+    public Object get(String key) {
         if (key == null) {
             throw new JSONException("Null key.");
         } else {
@@ -87,7 +91,7 @@ public class JSONObject {
         }
     }
 
-    public boolean getBoolean(String key) throws JSONException {
+    public boolean getBoolean(String key) {
         Object object = this.get(key);
         if (!object.equals(Boolean.FALSE) && (!(object instanceof String) || !((String) object).equalsIgnoreCase("false"))) {
             if (!object.equals(Boolean.TRUE) && (!(object instanceof String) || !((String) object).equalsIgnoreCase("true"))) {
@@ -100,7 +104,7 @@ public class JSONObject {
         }
     }
 
-    public double getDouble(String key) throws JSONException {
+    public double getDouble(String key) {
         Object object = this.get(key);
 
         try {
@@ -110,7 +114,7 @@ public class JSONObject {
         }
     }
 
-    public int getInt(String key) throws JSONException {
+    public int getInt(String key) {
         Object object = this.get(key);
 
         try {
@@ -120,7 +124,7 @@ public class JSONObject {
         }
     }
 
-    public JSONObject getJSONObject(String key) throws JSONException {
+    public JSONObject getJSONObject(String key) {
         Object object = this.get(key);
         if (object instanceof JSONObject) {
             return (JSONObject) object;

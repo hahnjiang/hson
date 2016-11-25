@@ -61,8 +61,9 @@ public class ByteChunk {
     }
 
     public int write(char x) {
-        write((byte) (x >> 8));
-        return write((byte) (x));
+        int r = write((byte) (x >> 8));
+        write((byte) (x));
+        return r;
     }
 
     public int write(String str) {
@@ -83,21 +84,21 @@ public class ByteChunk {
     }
 
     public int getInt(int pos) {
-        return    (( getByte(pos    )&0xff) << 24)
-                | (( getByte(pos + 1)&0xff) << 16)
-                | (( getByte(pos + 2)&0xff) <<  8)
-                | (( getByte(pos + 3)&0xff)      );
+        return ((getByte(pos) & 0xff) << 24)
+                | ((getByte(pos + 1) & 0xff) << 16)
+                | ((getByte(pos + 2) & 0xff) << 8)
+                | ((getByte(pos + 3) & 0xff));
     }
 
     public long getLong(int pos) {
-        return    (( (long)getByte(pos    )&0xff) << 56)
-                | (( (long)getByte(pos + 1)&0xff) << 48)
-                | (( (long)getByte(pos + 2)&0xff) << 40)
-                | (( (long)getByte(pos + 3)&0xff) << 32)
-                | (( (long)getByte(pos + 4)&0xff) << 24)
-                | (( (long)getByte(pos + 5)&0xff) << 16)
-                | (( (long)getByte(pos + 6)&0xff) << 8)
-                | (( (long)getByte(pos + 7)&0xff));
+        return (((long) getByte(pos) & 0xff) << 56)
+                | (((long) getByte(pos + 1) & 0xff) << 48)
+                | (((long) getByte(pos + 2) & 0xff) << 40)
+                | (((long) getByte(pos + 3) & 0xff) << 32)
+                | (((long) getByte(pos + 4) & 0xff) << 24)
+                | (((long) getByte(pos + 5) & 0xff) << 16)
+                | (((long) getByte(pos + 6) & 0xff) << 8)
+                | (((long) getByte(pos + 7) & 0xff));
     }
 
     public double getDouble(int pos) {
@@ -106,8 +107,8 @@ public class ByteChunk {
     }
 
     public char getChar(int pos) {
-        return (char) ((((char) (getByte(pos))) << 8)
-                | (((char) (getByte(pos + 1)))));
+        return (char) ((((char) getByte(pos) & 0xff) << 8)
+                | (((char) getByte(pos + 1) & 0xff)));
 
     }
 

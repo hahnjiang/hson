@@ -1,4 +1,7 @@
-package org.hahn.hson;
+package org.hahn.hson.structure;
+
+import org.hahn.hson.ByteChunk;
+import org.hahn.hson.JSONException;
 
 import java.util.*;
 
@@ -8,13 +11,12 @@ import java.util.*;
  * 使用跳表专门支持 (k, v) 形式的 JSONObject
  * sort by value
  */
-public class JSONSkipListMap {
+public class JSONSkipListMap<K extends Comparable<? super K>, V extends Comparable<? super V>> {
 
-    private static final int KEY_NEXT = 0;
-    private static final int VALUE_NEXT = 1;
-    private Cell[] head = null;
+    private Cell<K, V>[] head = null;
     private int level;
     private int length;
+    private ByteChunk chunk;
 
     private int calcLevel(int s) {
         int l = 1;
@@ -27,10 +29,10 @@ public class JSONSkipListMap {
         for (Map.Entry<String, Double> entry : map.entrySet()) {
             data.add(new Cell(level, entry.getKey(), entry.getValue()));
         }
-        Collections.sort(data, new Cell.ValueComparator());
-        init(data, VALUE_NEXT);
-        Collections.sort(data, new Cell.KeyComparator());
-        init(data, KEY_NEXT);
+        Collections.sort(data, new ValueComparator());
+        init(data, Cell.VALUE_NEXT);
+        Collections.sort(data, new KeyComparator());
+        init(data, Cell.KEY_NEXT);
     }
 
     private void init(List<Cell> data, int t) {
@@ -63,8 +65,8 @@ public class JSONSkipListMap {
         init(map);
     }
 
-    public void add(String key, double value) {
-        Cell p = find(key, head[KEY_NEXT]);
+    public void add(K key, V value) {
+        Cell p = find(key, head[Cell.KEY_NEXT]);
         if (p.key.equals(key)) {
             return;
         } else {
@@ -73,10 +75,10 @@ public class JSONSkipListMap {
     }
 
     public void prettyPrint() {
-        Cell point = head[VALUE_NEXT];
+        Cell point = head[Cell.VALUE_NEXT];
         for (int i = 0; i < length(); i++) {
             System.out.println(point);
-            point = point.next[VALUE_NEXT][0];
+            point = point.next[Cell.VALUE_NEXT][0];
         }
     }
 
@@ -92,15 +94,15 @@ public class JSONSkipListMap {
         return this.length;
     }
 
-    public double opt(String key, double defaultValue) {
-        Cell p = find(key, head[KEY_NEXT]);
+    public V opt(K key, V defaultValue) {
+        Cell<K, V> p = find(key, head[Cell.KEY_NEXT]);
         if (p == null || !p.key.equals(key)) {
             return defaultValue;
         }
         return p.val;
     }
 
-    private Cell find(String key, Cell point) {
+    private Cell<K, V> find(K key, Cell<K, V> point) {
         if (point == null) {
             return null;
         }
@@ -109,7 +111,7 @@ public class JSONSkipListMap {
         } else {
             int idx = -1;
             for (int i = 0; i < point.next.length; ++i) {
-                if (point.next[KEY_NEXT][i].key.compareTo(key) <= 0) {
+                if (point.next[Cell.KEY_NEXT][i].key.compareTo(key) <= 0) {
                     idx = i;
                 } else {
                     break;
@@ -118,63 +120,16 @@ public class JSONSkipListMap {
             if (idx == -1) {
                 return point;
             } else {
-                return find(key, point.next[KEY_NEXT][idx]);
+                return find(key, point.next[Cell.KEY_NEXT][idx]);
             }
         }
     }
 
-    public static class Cell {
-        private Cell[][] next = null;
-        private String key;
-        private double val;
-
-        public Cell(int level, String key, double val) {
-            this.next = new Cell[2][level];
-            this.key = key;
-            this.val = val;
-        }
-
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("[key=").append(key);
-            sb.append(",value=").append(val);
-            sb.append(",knext=");
-            for (Cell c : next[KEY_NEXT]) {
-                if (c != null) {
-                    sb.append(c.key).append(",");
-                } else {
-                    sb.append("null,");
-                }
-            }
-            sb.append("vnext=");
-            for (Cell c : next[VALUE_NEXT]) {
-                if (c != null) {
-                    sb.append(c.key).append(",");
-                } else {
-                    sb.append("null,");
-                }
-            }
-            sb.append("]");
-            return sb.toString();
-        }
-
-        static class KeyComparator implements Comparator<Cell> {
-            @Override
-            public int compare(Cell o1, Cell o2) {
-                String s1 = o1.key;
-                String s2 = o2.key;
-                return s1.compareTo(s2);
-            }
-        }
-
-        static class ValueComparator implements Comparator<Cell> {
-            @Override
-            public int compare(Cell o1, Cell o2) {
-                double s1 = o1.val;
-                double s2 = o2.val;
-                return (s1 == s2) ? 0 : ((s1 < s2) ? (-1) : (1));
-            }
-        }
+    public ByteChunk write() {
+        int[] index = new int[length()];
+        ByteChunk chunk = new ByteChunk();
+        Cell point = head[Cell.KEY_NEXT];
+        return chunk;
     }
 
 }

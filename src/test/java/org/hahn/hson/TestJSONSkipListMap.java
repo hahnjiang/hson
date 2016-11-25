@@ -1,5 +1,6 @@
 package org.hahn.hson;
 
+import org.hahn.hson.structure.JSONSkipListMap;
 import org.junit.Test;
 
 import java.util.HashMap;
