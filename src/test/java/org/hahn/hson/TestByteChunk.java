@@ -40,7 +40,7 @@ public class TestByteChunk {
 
         p = chunk.write(10L);
         v = chunk.getLong(p);
-        Assert.assertEquals(10, v);
+        Assert.assertEquals(10L, v);
 
         p = chunk.write(Long.MAX_VALUE);
         v = chunk.getLong(p);
