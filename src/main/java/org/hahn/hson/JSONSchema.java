@@ -7,57 +7,27 @@ import java.util.Map;
  * Created by jianghan on 2016/11/9.
  * <p>
  * field1:I/L/D/S/TupleList(S:D)
+ * <p>
+ * Assert.assertEquals(f1, "age|I,item_list|T|SDD,name|S,tag_list|T|SDD");
+ * Assert.assertEquals(f2, "item_list|T|SLI");
  */
 public class JSONSchema {
 
-    public enum ValueType {
+  private Map<String, JSONMeta> metaMap = new HashMap<>();
 
-        INT("I", 0),
-        STRING("S", 1),
-        DOUBLE("D", 2),
-        LONG("L", 3),
-        TUPLE_LIST("T", 4);
-
-        private int val;
-        private String type;
-
-        ValueType(String type, int val) {
-            this.type = type;
-            this.val = val;
-        }
-
-        public static ValueType getBySign(int val) {
-            for (ValueType t : values()) {
-                if (t.val == val) {
-                    return t;
-                }
-            }
-            throw new IllegalArgumentException("Can't find ValueType by sign: " + val);
-        }
-
-        public static ValueType getByType(String type) {
-            for (ValueType t : values()) {
-                if (t.type == type) {
-                    return t;
-                }
-            }
-            throw new IllegalArgumentException("Can't find ValueType by type: " + type);
-        }
+  public JSONSchema(String line) {
+    String[] fields = line.split(",");
+    for (String field : fields) {
+      String[] cols = field.split("\\|");
+      JSONMeta meta = new JSONMeta(cols[0], JType.parseFromSign(cols[1]));
+      if (meta.getType() == JType.Tuple2List) {
+        JType kType = JType.parseFromSign(cols[2].substring(0, 1));
+        JType vType = JType.parseFromSign(cols[2].substring(1, 2));
+        JOrder order = JOrder.parseFromSign(cols[2].substring(2, 3));
+        meta.setTupleListType(kType, vType, order);
+      }
+      metaMap.put(meta.getField(), meta);
     }
-
-    private Map<String, ValueType> schema;
-
-    public JSONSchema(String line) {
-        String[] cols = line.split(",");
-        schema = new HashMap<>(cols.length);
-        for (String col : cols) {
-            String[] s = col.split(":", 2);
-            schema.put(s[0], ValueType.getByType(s[1]));
-        }
-    }
-
-    public ValueType getType(String fieldName) {
-        return schema.get(fieldName);
-    }
+  }
 
 }
